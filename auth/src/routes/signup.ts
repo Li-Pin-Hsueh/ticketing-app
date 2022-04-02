@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import { body, validationResult } from "express-validator";
 import { RequestValidationError } from "../errors/request-validation-error";
 import { DatabaseConnectionError } from "../errors/database-connection-error";
@@ -14,18 +14,20 @@ router.post(
       .isLength({ min: 4, max: 20 })
       .withMessage("Password must be valide"),
   ],
-  (req: Request, res: Response) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
 
+    // if (!errors.isEmpty()) {
+    //   throw new RequestValidationError(errors.array());
+    // }
     if (!errors.isEmpty()) {
-      // return res.status(400).send(errors.array());
-      throw new RequestValidationError(errors.array());
-    } 
+      next(new RequestValidationError(errors.array()));
+    }
 
     console.log("Createing a user...");
-    throw new DatabaseConnectionError();
+    next(new DatabaseConnectionError());
     // return
-    res.send({});
+    // res.send({});
   }
 );
 
