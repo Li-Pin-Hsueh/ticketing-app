@@ -1,4 +1,24 @@
 import mongoose from "mongoose";
+import { Password } from "../services/password";
+
+// An interface that describes the props
+// that create a new user has
+interface UserAttrs {
+  email: string;
+  password: string;
+}
+
+// An interface describes User Model
+interface UserModel extends mongoose.Model<any> {
+  build(attrs: UserAttrs): UserDoc;
+}
+
+// An interface that describes the props
+// that a User Document has
+interface UserDoc extends mongoose.Document {
+  email: string;
+  password: string;
+}
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -11,6 +31,28 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-const User = mongoose.model("User", userSchema);
+userSchema.pre("save", async function(done) {
+  // Create new user is a MODIFY-event
+  if (this.isModified("password")) {
+    const hashed = await Password.toHash(this.get("password"));
+    this.set("password", hashed);
+  }
+
+  done();
+});
+
+userSchema.statics.build = (attrs: UserAttrs) => {
+  return new User(attrs);
+};
+
+const User = mongoose.model<UserDoc, UserModel>("User", userSchema);
+
+// example for creating a new User::
+
+// const user = User.build({
+//   email: "Test@app.io",
+//   password: "test1234",
+//   x: 1,
+// });
 
 export { User };
