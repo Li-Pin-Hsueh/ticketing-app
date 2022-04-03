@@ -45,7 +45,8 @@ router.post(
         id: user.id,
         email: user.email,
       },
-      "asdf"
+      // ! tells TS that we deal with this issue
+      process.env.JWT_KEY!
     );
 
     // Store it on session obj
