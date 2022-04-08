@@ -1,7 +1,10 @@
 import express, { NextFunction, Request, Response } from "express";
-import { body, validationResult } from "express-validator";
-import { RequestValidationError } from "../errors/request-validation-error";
-
+import { validateRequest } from "../middlewares/validate-request";
+import jwt from "jsonwebtoken";
+import { User } from "../models/user";
+import { body } from "express-validator";
+import { BadRequestError } from "../errors/bad-request-error";
+import { Password } from "../services/password";
 const router = express.Router();
 
 router.post(
@@ -13,12 +16,41 @@ router.post(
       .notEmpty()
       .withMessage("You must supply a password"),
   ],
+  validateRequest,
   async (req: Request, res: Response, next: NextFunction) => {
-    const errors = validationResult(req);
+    const { email, password } = req.body;
 
-    if (!errors.isEmpty()) {
-      next(new RequestValidationError(errors.array()));
+    const existingUser = await User.findOne({ email });
+    if (!existingUser) {
+      // It's a bad request error
+      return next(new BadRequestError("User not exist..."));
     }
+
+    // Compare the pwd
+    const passwordsMatch = await Password.compare(
+      existingUser.password,
+      password
+    );
+
+    if (!passwordsMatch) {
+      return next(new BadRequestError("Wrong password..."));
+    }
+
+    // Generate JWT
+    const userJWT = jwt.sign(
+      {
+        id: existingUser.id,
+        email: existingUser.email,
+      },
+      process.env.JWT_KEY!
+    );
+
+    // store it on session obj
+    req.session = {
+      jwt: userJWT,
+    };
+
+    res.status(200).send(existingUser);
   }
 );
 
