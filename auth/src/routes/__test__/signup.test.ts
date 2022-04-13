@@ -6,7 +6,7 @@ it("return a 201 on successful signup", async () => {
     .post("/api/users/signup")
     .send({
       email: "test@test.com",
-      paswword: "password",
+      password: "password",
     })
     .expect(201);
 });
