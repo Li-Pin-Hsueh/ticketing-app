@@ -4,6 +4,7 @@ import cookieSession from "cookie-session";
 import { createTicketRouter } from "./routes/new";
 import { showTicketRouter } from "./routes/show";
 import { indexTicketRouter } from "./routes";
+import { updateTicketRouter } from "./routes/update";
 
 import { errorHandler, NotFoundError, currentUser } from "@pintickets/common";
 
@@ -22,6 +23,7 @@ app.use(currentUser);
 app.use(createTicketRouter);
 app.use(showTicketRouter);
 app.use(indexTicketRouter);
+app.use(updateTicketRouter);
 
 app.all("*", async (req, res, next) => {
   return next(new NotFoundError());
