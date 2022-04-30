@@ -1,0 +1,6 @@
+1. Use setTimeout()
+  - Timer stored in memory. If service restarts, all timers are lost
+2. Don't ack until time to emit.
+  - Rely on NATS redelivery mechanism. Seems wired...
+3. Use "Bull JS" library, it will set a reminder and store a list of jobs inside Redis Server
+  - Redis server is a in-memory database.
