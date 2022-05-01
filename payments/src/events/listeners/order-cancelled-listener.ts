@@ -1,6 +1,6 @@
 import { OrderCancelledEvent, Subjects, Listener, OrderStatus } from "@pintickets/common";
 import { Message } from "node-nats-streaming";
-import { Order } from "../models/order";
+import { Order } from "../../models/order";
 import { queueGroupName } from "./queue-group-name";
 
 export class OrderCancelledListener extends Listener<OrderCancelledEvent> {
