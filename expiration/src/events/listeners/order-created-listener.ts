@@ -1,34 +1,30 @@
-import { Listener, OrderCreatedEvent, OrderStatus, Subjects } from "@pintickets/common";
+import {
+  Listener,
+  OrderCreatedEvent,
+  OrderStatus,
+  Subjects,
+} from "@pintickets/common";
 import { Message } from "node-nats-streaming";
-import { queueGroupName } from './queue-group-name';
-import { Ticket } from "../../models/ticket";
-import { TicketUpdatedPublisher } from "../publishers/ticket-updated-publisher";
+import { queueGroupName } from "./queue-group-name";
+import { expirationQueue } from "../../queues/expiration-queue";
 
 export class OrderCreatedListener extends Listener<OrderCreatedEvent> {
   readonly subject = Subjects.OrderCreated;
   queueGroupName = queueGroupName;
 
-  async onMessage(data: OrderCreatedEvent['data'] , msg: Message) {
-    // Find the ticket that the order is reserving
-    const ticket = await Ticket.findById(data.ticket.id);
-    // if no ticket, throw error
-    if (!ticket) {
-      throw new Error('Ticket not found');
-    }
-    // Mark the ticket as being reserved by setting its orderId property
-    ticket.set({ orderId: data.id });
-    // Save the ticket
-    await ticket.save();
-    await new TicketUpdatedPublisher(this.client).publish({
-      id: ticket.id,
-      price: ticket.price,
-      title: ticket.title,
-      userId: ticket.userId,
-      orderId: ticket.orderId,
-      version: ticket.version,
-    });
-    
-    // ack the msg
+  async onMessage(data: OrderCreatedEvent["data"], msg: Message) {
+    const delay = new Date(data.expiresAt).getTime() - new Date().getTime();
+    console.log(`Waiting for ${delay} milliseconds to process the job...`);
+
+    await expirationQueue.add(
+      {
+        orderId: data.id,
+      },
+      {
+        delay,
+      }
+    );
+
     msg.ack();
-  };
+  }
 }
