@@ -2,13 +2,14 @@ import request from "supertest";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import mongoose from "mongoose";
 import { app } from "../app";
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 
 declare global {
-  var signin: () => string[];
+  var signin: (id?: string) => string[];
 }
 
-jest.mock('../nats-wrapper');
+jest.mock("../nats-wrapper");
+jest.mock("../stripe");
 
 let mongo: any;
 beforeAll(async () => {
@@ -36,11 +37,11 @@ afterAll(async () => {
   await mongo.stop();
 });
 
-global.signin = () => {
+global.signin = (id?: string) => {
   // Build a SWT payload. { id, email }
   const payload = {
-    id: new mongoose.Types.ObjectId().toHexString(),
-    email: 'test@test.com'
+    id: id || new mongoose.Types.ObjectId().toHexString(),
+    email: "test@test.com",
   };
   // Create the JWT
   const token = jwt.sign(payload, process.env.JWT_KEY!);
@@ -49,7 +50,7 @@ global.signin = () => {
   // urn that session into JSON
   const sessionJSON = JSON.stringify(session);
   // Take JSON and encode as base64
-  const base64 = Buffer.from(sessionJSON).toString('base64');
+  const base64 = Buffer.from(sessionJSON).toString("base64");
   // return a string that the cookie with the encode data
   return [`session=${base64}==; path=/; secure; httponly`];
 };
